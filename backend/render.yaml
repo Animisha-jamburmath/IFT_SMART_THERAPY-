@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ift-therapy-api
+    env: python
+    region: singapore          # closest to India
+    plan: free
+    rootDir: backend           # tells Render where the app lives
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health   # optional, added below

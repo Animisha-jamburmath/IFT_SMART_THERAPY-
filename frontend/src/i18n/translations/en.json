@@ -1,0 +1,127 @@
+{
+  "app": { "title": "IFT Therapy", "subtitle": "Smart Interferential Therapy System" },
+  "nav": {
+    "dashboard": "Dashboard", "patients": "Patients", "sessions": "Sessions",
+    "painLog": "Pain Log", "aiCoach": "AI Coach", "imaging": "Imaging",
+    "settings": "Settings", "help": "Help"
+  },
+  "login": {
+    "welcome": "Welcome back", "subtitle": "Enter your details to continue",
+    "username": "Username", "password": "Password",
+    "usernamePlaceholder": "Enter your username",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign in", "noAccount": "Don't have an account?",
+    "createAccount": "Create Account",
+    "footer": "made by students of EEE dept, JNNCE shimogga",
+    "demo": "Demo: admin / admin123"
+  },
+  "register": {
+    "title": "Create Account", "subtitle": "Register to access the IFT Therapy System",
+    "fullName": "Full Name", "username": "Username", "email": "Email",
+    "password": "Password", "confirmPassword": "Confirm Password",
+    "createAccount": "Create Account", "haveAccount": "Already have an account?",
+    "success": "Registration successful!"
+  },
+  "dashboard": {
+    "title": "My Therapy", "sessionProgress": "Session Progress",
+    "ready": "Ready", "running": "Running", "inactive": "Inactive",
+    "complete": "Complete", "remaining": "remaining",
+    "currentTherapy": "Current Therapy", "frequency": "Frequency",
+    "intensity": "Intensity", "current": "Current",
+    "aiDecision": "AI Decision", "confidence": "confidence",
+    "startTherapy": "Start Therapy", "waiting": "Waiting for device...",
+    "sendParams": "Parameters sent! Press physical START button.",
+    "mqttConnected": "Connected", "mqttDisconnected": "Disconnected",
+    "channels": "Channels", "painLevel": "How's your pain?",
+    "logPain": "Log Pain", "sending": "Sending...",
+    "aiCoachSays": "AI Coach says...",
+    "increase": "📈 Try increasing intensity slightly if comfortable.",
+    "reduce": "📉 Consider reducing intensity for better comfort.",
+    "abnormal": "⚠️ Abnormal pattern detected. Check electrode placement.",
+    "maintain": "✨ You're doing great! Keep going at this pace."
+  },
+  "account": {
+    "title": "My Account", "profile": "Profile", "fullName": "Full Name",
+    "username": "Username", "email": "Email", "role": "Role",
+    "memberSince": "Member Since", "logout": "Logout",
+    "editProfile": "Edit Profile", "save": "Save Changes", "cancel": "Cancel",
+    "language": "Language", "english": "English", "kannada": "ಕನ್ನಡ"
+  },
+  "aiCoach": {
+    "title": "AI Coach", "placeholder": "Ask about your therapy...",
+    "voiceInput": "Voice Input",
+    "welcome": "Hello! I am your AI therapy coach. Ask me anything about pain management, IFT, or rehabilitation.",
+    "error": "Error connecting to AI service. Please try again.",
+    "thinking": "Thinking..."
+  },
+  "patients": {
+    "title": "Patient Management", "addPatient": "Add Patient",
+    "searchPlaceholder": "Search by name, disease, or contact...",
+    "noPatients": "No patients found",
+    "firstName": "Patient", "age": "Age", "gender": "Gender",
+    "disease": "Disease", "contact": "Contact", "email": "Email",
+    "actions": "Actions", "edit": "Edit", "delete": "Delete",
+    "addTitle": "Add Patient", "editTitle": "Edit Patient",
+    "name": "Full Name", "save": "Save", "update": "Update"
+  },
+  "sessions": {
+    "title": "Therapy Sessions", "total": "Total Sessions",
+    "completed": "Completed", "emergency": "Emergency",
+    "avgImprovement": "Avg Improvement", "noSessions": "No sessions recorded",
+    "patient": "Patient", "frequency": "Frequency", "intensity": "Intensity",
+    "duration": "Duration", "pain": "Pain", "outcome": "Outcome", "status": "Status",
+    "details": "Session Details", "therapyParams": "Therapy Parameters",
+    "painAssessment": "Pain Assessment", "before": "Before", "after": "After"
+  },
+  "painLog": {
+    "title": "Pain Log", "history": "Pain History", "date": "Date",
+    "before": "Before", "after": "After", "improvement": "Improvement",
+    "session": "Session", "avgBefore": "Avg Pain Before",
+    "avgAfter": "Avg Pain After", "avgImprovement": "Avg Improvement",
+    "logPain": "Log Pain", "noLogs": "No pain logs found"
+  },
+  "settings": {
+    "title": "Device Settings", "deviceConfig": "Device Configuration",
+    "wifiConfig": "WiFi Configuration", "ssid": "SSID", "password": "Password",
+    "mqttConfig": "MQTT Broker", "broker": "Broker IP", "port": "Port",
+    "username": "Username", "save": "Save Settings", "test": "Test",
+    "reload": "Reload", "saved": "Settings saved successfully!"
+  },
+  "help": {
+    "title": "Help & Documentation",
+    "welcome": "Welcome to IFT Therapy Help",
+    "subtitle": "Find answers to common questions, troubleshooting guides, and support resources.",
+    "faq": "Frequently Asked Questions", "contact": "Contact Support",
+    "faq1": "How do I start a therapy session?",
+    "faq1a": "Adjust frequency and intensity using the sliders, then press 'Start Therapy'. After that, press the physical START button on the device.",
+    "faq2": "What does the AI Coach do?",
+    "faq2a": "The AI Coach monitors your therapy and provides real-time suggestions to optimize your treatment.",
+    "faq3": "How do I log pain?",
+    "faq3a": "Use the pain slider on the Dashboard or go to the Pain Log page to record your pain levels."
+  },
+  "imaging": {
+    "title": "Imaging & Reports", "report": "Report Form",
+    "imaging": "Imaging & AI", "studentInfo": "Student Information",
+    "name": "Student's Name", "class": "Class", "rollNo": "Roll No.",
+    "date": "Date", "painAssessment": "Pain Assessment",
+    "painType": "Pain Type", "acute": "Acute", "chronic": "Chronic",
+    "painSubType": "Pain Sub-type", "duration": "Duration",
+    "radiating": "Radiating / Non-radiating",
+    "patientDemographics": "Patient Demographics", "patientName": "Patient Name",
+    "patientAge": "Age", "patientGender": "Gender", "occupation": "Occupation",
+    "saveReport": "Save Report", "uploadImage": "Upload Image",
+    "dropHere": "Drop MRI, X-ray, or CT images here", "takePhoto": "Take Photo",
+    "aiAnalysis": "AI Analysis", "runAi": "Run AI Analysis",
+    "analyzing": "Analyzing...", "imagePreview": "Image Preview",
+    "noImage": "No image selected", "aiFindings": "AI Findings",
+    "modality": "Modality", "findings": "Findings",
+    "abnormalities": "Abnormalities", "recommendation": "Recommendation",
+    "therapyRecommendation": "Therapy Recommendation", "sendToDevice": "Send to Device"
+  },
+  "common": {
+    "loading": "Loading...", "error": "Something went wrong", "success": "Success",
+    "save": "Save", "cancel": "Cancel", "delete": "Delete", "edit": "Edit",
+    "back": "Back", "actions": "Actions", "add": "Add", "refresh": "Refresh",
+    "total": "Total", "close": "Close", "confirm": "Confirm"
+  }
+}
