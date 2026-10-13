@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List, Dict
 import httpx
 import logging
+import os
 from api.auth import oauth2_scheme
 from database.database import get_db
 from sqlalchemy.orm import Session
@@ -12,173 +12,162 @@ from services.auth_service import decode_token
 router = APIRouter(prefix="/ai", tags=["AI"])
 logger = logging.getLogger(__name__)
 
-
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-
-
 class ChatRequest(BaseModel):
     message: str
     language: str = "en"
-    history: Optional[List[ChatMessage]] = []
-    context: Optional[Dict] = {}
-
-
-class ChatResponse(BaseModel):
-    response: str
-    technical_level: str = "clinical"
-    references: Optional[List[str]] = []
-
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     payload = decode_token(token)
-    user = db.query(User).filter(User.username == payload.get("sub")).first()
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+# ─── Groq API ────────────────────────────────────────────────────
+GROQ_API_KEY = "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"
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.1-8b-instant"  # Try also: "llama3-70b-8192" or "mixtral-8x7b-32768"
 
-SYSTEM_PROMPT_EN = """You are an expert clinical therapist specializing in Interferential Therapy (IFT). Provide TECHNICAL, EVIDENCE-BASED, PRECISE answers.
+# ─── Hugging Face Fallback (no API key required) ──────────────
+HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
 
-RULES:
-1. ALWAYS give specific numbers (Hz, %, mA, minutes)
-2. Reference clinical guidelines (APTA, Cochrane, WHO)
-3. Structure with headings and tables
-4. Include safety warnings
-5. Never give vague answers
-
-Knowledge:
-- IFT uses two medium-freq currents (2–10 kHz) that cross, producing low-freq beat at tissue intersection
-- Beat = |f1 - f2| in Hz
-- Acute pain: 4 kHz carrier, 80-100 Hz beat, 25-35% intensity, 10 min
-- Chronic pain: 8-10 kHz carrier, 2-10 Hz beat, 35-50% intensity, 20 min
-- Lumbar disc: 4-6 kHz, 90-110 Hz beat, 30-40%, 15-20 min
-- Cervical: 4 kHz, 80-100 Hz, 25-35%, 15 min
-- Sciatica: 6-8 kHz, 80-100 Hz, 30-40%, 20 min
-- Electrode placement: 8-12 cm apart, gel pads, avoid carotid/head/heart
-- Contraindications: pacemaker, pregnancy, DVT, malignancy, infection
-"""
-
-
-def get_fallback(message: str, lang: str = "en") -> str:
-    lower = message.lower()
-
-    if any(k in lower for k in ["frequency", "hz", "khz", "ಆವರ್ತನ"]):
-        return """**FREQUENCY SELECTION — IFT PROTOCOL**
-
-**Carrier frequency (2–10 kHz):**
-• 4 kHz    → Acute pain, superficial
-• 6–8 kHz  → Subacute, moderate depth
-• 8–10 kHz → Chronic, deep tissue
-
-**Beat frequency (1–250 Hz):**
-• 1–10 Hz   → Endorphin release (chronic)
-• 10–25 Hz  → Muscle pump (edema, spasm)
-• 50–100 Hz → Pain gating (gate control)
-• 100–150 Hz→ Acute pain / post-op
-• 150–250 Hz→ Trigger point
-
-**Starting point:** 4 kHz carrier, 100 Hz beat, 30% intensity, 15 min."""
-
-    if any(k in lower for k in ["intensity", "%", "ತೀವ್ರತೆ"]):
-        return """**INTENSITY CALIBRATION**
-
-• Sensory (15–25%)   → Mild tingling
-• Motor (30–45%)     → Visible contraction
-• Noxious (>60%)     → AVOID
-• Hardware limit     → 50 mA
-• Software cutoff    → 8.5 mA
-
-**Titration:** Start at 0%, increase 5% every 30s."""
-
-    if any(k in lower for k in ["lumbar", "disc", "herniation"]):
-        return """**LUMBAR DISC HERNIATION — IFT PROTOCOL**
-
-• Carrier: 4,000–6,000 Hz
-• Beat: 90–110 Hz
-• Intensity: 30–40%
-• Duration: 15–20 min
-• Placement: Bipolar crossed (L2-L4 / L4-S1)
-• Frequency: 3–5×/week for 2–3 weeks
-
-**Safety:** Avoid if pacemaker, DVT, pregnancy."""
-
-    if any(k in lower for k in ["safety", "contraindic", "ಸುರಕ್ಷತೆ"]):
-        return """**IFT CONTRAINDICATIONS**
-
-**Absolute:**
-1. Cardiac pacemaker / ICD
-2. Pregnancy (abdomen/lumbar)
-3. Active DVT / thrombophlebitis
-4. Over carotid sinus / head
-5. Malignancy in area
-6. Osteomyelitis / infection
-7. Hemorrhagic conditions
-
-**Relative:** Impaired sensation, cognitive impairment, metal implants."""
-
-    return """**IFT CLINICAL ASSISTANT**
-
-Ask about:
-• Frequency selection (carrier + beat)
-• Intensity calibration
-• Electrode placement
-• Clinical protocols (lumbar, cervical, OA)
-• Safety and contraindications
-• Session design
-
-Please ask a specific question for a technical answer."""
-
-
-async def query_groq(messages: list) -> str:
-    GROQ_API_KEY = "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"
-    async with httpx.AsyncClient(timeout=45.0) as client:
+async def query_groq(prompt: str) -> str:
+    """Query Groq API with proper error handling."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
         try:
-            r = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": "llama-3.1-8b-instant",
-                    "messages": messages,
-                    "temperature": 0.4,
-                    "max_tokens": 800,
+            logger.info(f"🔄 Querying Groq API with model: {GROQ_MODEL}")
+            response = await client.post(
+                GROQ_API_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json"
                 },
+                json={
+                    "model": GROQ_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful medical therapy assistant. Answer only medical and therapy-related questions."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 500,
+                }
             )
-            if r.status_code != 200:
-                raise Exception(f"Groq {r.status_code}")
-            data = r.json()
+            
+            logger.info(f"📡 Groq response status: {response.status_code}")
+            
+            if response.status_code == 401:
+                logger.error("❌ Invalid Groq API key")
+                raise Exception("Invalid API key")
+            elif response.status_code == 429:
+                logger.error("❌ Rate limit exceeded")
+                raise Exception("Rate limit exceeded")
+            elif response.status_code != 200:
+                error_detail = response.text
+                logger.error(f"❌ Groq API error: {response.status_code} - {error_detail}")
+                raise Exception(f"Groq API returned {response.status_code}")
+            
+            data = response.json()
             return data["choices"][0]["message"]["content"]
+            
+        except httpx.TimeoutException:
+            logger.error("❌ Groq API timeout")
+            raise Exception("Request timeout")
         except Exception as e:
-            logger.warning(f"Groq failed: {e}")
+            logger.error(f"❌ Groq request failed: {e}")
             raise
 
+async def query_huggingface(prompt: str) -> str:
+    """Fallback to Hugging Face free inference API."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            logger.info("🔄 Falling back to Hugging Face API")
+            response = await client.post(
+                HF_API_URL,
+                json={
+                    "inputs": prompt,
+                    "parameters": {
+                        "max_new_tokens": 300,
+                        "temperature": 0.7,
+                        "do_sample": True,
+                    }
+                }
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"❌ Hugging Face error: {response.status_code}")
+                raise Exception(f"HF API returned {response.status_code}")
+            
+            result = response.json()
+            if isinstance(result, list) and len(result) > 0:
+                generated = result[0].get("generated_text", "")
+                # Remove the prompt from the response
+                if generated.startswith(prompt):
+                    return generated[len(prompt):].strip()
+                return generated.strip()
+            return "I couldn't generate a response."
+            
+        except Exception as e:
+            logger.error(f"❌ Hugging Face failed: {e}")
+            raise
 
-async def get_ai_response(message: str, language: str, history: list) -> str:
-    system = SYSTEM_PROMPT_EN
-    messages = [{"role": "system", "content": system}]
+async def get_ai_response(user_message: str, language: str = "en") -> str:
+    system_prompt = (
+        "You are a knowledgeable assistant for an Interferential Therapy (IFT) system. "
+        "Answer only questions related to pain management, physical therapy, IFT, electrical stimulation, "
+        "musculoskeletal conditions, and rehabilitation. If the question is off-topic, politely say you can only answer "
+        "medical and therapy-related questions. Keep responses concise, helpful, and evidence-based."
+    )
+    full_prompt = f"{system_prompt}\n\nUser: {user_message}\nAssistant:"
 
-    for h in (history or [])[-6:]:
-        role = h.role if hasattr(h, 'role') else h.get('role', 'user')
-        content = h.content if hasattr(h, 'content') else h.get('content', '')
-        messages.append({"role": role, "content": content})
-
-    messages.append({"role": "user", "content": message})
-
+    # ─── Try Groq first ──────────────────────────────────────────
     try:
-        return await query_groq(messages)
-    except Exception:
-        return get_fallback(message, language)
+        response = await query_groq(full_prompt)
+        logger.info("✅ Response from Groq")
+        return response
+    except Exception as groq_error:
+        logger.warning(f"Groq failed: {groq_error}")
+        
+        # ─── Try Hugging Face fallback ──────────────────────────
+        try:
+            response = await query_huggingface(full_prompt)
+            logger.info("✅ Response from Hugging Face")
+            return response
+        except Exception as hf_error:
+            logger.error(f"Hugging Face also failed: {hf_error}")
+            
+            # ─── Final fallback: intelligent mock responses ──────
+            lower_msg = user_message.lower()
+            
+            # Check for specific keywords
+            if any(word in lower_msg for word in ['frequency', 'hz', 'khz']):
+                return "For IFT therapy, frequencies typically range from 4 kHz to 10 kHz. The optimal frequency depends on the condition being treated. Lower frequencies (4-6 kHz) are often used for acute pain, while higher frequencies (8-10 kHz) may be better for chronic conditions."
+            
+            elif any(word in lower_msg for word in ['intensity', '%']):
+                return "Therapy intensity is usually set between 30% and 80% of the patient's tolerance. We recommend starting at a low intensity (30-40%) and gradually increasing based on patient comfort and response."
+            
+            elif any(word in lower_msg for word in ['pain', 'relief', 'ache']):
+                return "IFT therapy helps reduce pain through several mechanisms: blocking pain signals, stimulating endorphin release, and promoting blood flow. Many patients experience significant pain relief after 10-15 minutes of treatment."
+            
+            elif any(word in lower_msg for word in ['session', 'duration', 'time']):
+                return "Typical IFT sessions last between 10 to 30 minutes. The duration depends on the condition and patient response. Always monitor patient comfort throughout the session."
+            
+            elif any(word in lower_msg for word in ['electrode', 'placement', 'pad']):
+                return "Electrodes should be placed around the treatment area, with the pain site between the electrode pairs. Ensure good skin contact and use gel pads for optimal conductivity."
+            
+            elif any(word in lower_msg for word in ['kannada', 'ಕನ್ನಡ']):
+                return "ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಕನ್ನಡದಲ್ಲಿ ಕೇಳಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಇಂಗ್ಲಿಷ್ನಲ್ಲಿ ಕೇಳಿ ಅಥವಾ ನಾನು ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರಿಸಲು ಪ್ರಯತ್ನಿಸುತ್ತೇನೆ. (I understand you asked in Kannada. Please ask in English or I'll try my best to respond in Kannada.)"
+            
+            else:
+                return "I'm here to help with IFT therapy questions. Please ask about frequency, intensity, pain management, session duration, or electrode placement. If you have a specific medical condition, I can provide general information to discuss with your healthcare provider."
 
-
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat")
 async def chat(request: ChatRequest, current_user: User = Depends(get_current_user)):
     try:
-        response = await get_ai_response(request.message, request.language, request.history)
-        return ChatResponse(response=response, references=[
-            "Watson T. Electrotherapy: Evidence-Based Practice (2014)",
-            "APTA Clinical Practice Guidelines (2020)",
-        ])
+        response = await get_ai_response(request.message, request.language)
+        return {"response": response}
     except Exception as e:
-        logger.error(f"Chat error: {e}")
-        return ChatResponse(response="Technical difficulties. Please try again.")
+        logger.error(f"Chat endpoint error: {e}")
+        return {"response": "I'm experiencing technical difficulties. Please try again in a moment."}

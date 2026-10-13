@@ -8,90 +8,67 @@ const Register = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    username: '', email: '', password: '', confirmPassword: '', full_name: '',
-  });
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '' });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setSuccess(false);
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match'); return;
-    }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters'); return;
-    }
+    setError('');
+    if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
+    if (form.password.length < 6) { setError('Password min 6 chars'); return; }
     setLoading(true);
     try {
       const res = await fetch('http://localhost:8000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.full_name,
-        }),
+        body: JSON.stringify({ username: form.username, email: form.email, password: form.password, full_name: form.full_name }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Registration failed');
-      setSuccess(true);
-      try {
-        await login(formData.username, formData.password);
-        navigate('/dashboard');
-      } catch {
-        setTimeout(() => navigate('/'), 1500);
-      }
-    } catch (err) {
-      setError(err.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
+      await login(form.username, form.password);
+      navigate('/dashboard');
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-secondary">{t('register.title')}</h1>
-          <p className="text-sm text-gray-400 mt-1">{t('register.subtitle')}</p>
+          <img src="/images/ift-logo.svg" alt="IFT" className="w-16 h-16 mx-auto" />
+          <h1 className="text-2xl font-bold text-secondary mt-2">{t('register.title')}</h1>
         </div>
         {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">{error}</div>}
-        {success && <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-600 text-sm">✅ {t('register.success')}</div>}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
-            { name: 'full_name', label: t('register.fullName'), icon: FiUser, type: 'text' },
-            { name: 'username', label: t('register.username'), icon: FiUser, type: 'text' },
-            { name: 'email', label: t('register.email'), icon: FiMail, type: 'email' },
-            { name: 'password', label: t('register.password'), icon: FiLock, type: 'password' },
-            { name: 'confirmPassword', label: t('register.confirmPassword'), icon: FiLock, type: 'password' },
-          ].map((field) => (
-            <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-600 mb-1">{field.label}</label>
+            { name: 'full_name', icon: FiUser, label: t('register.fullName') },
+            { name: 'username', icon: FiUser, label: t('register.username') },
+            { name: 'email', icon: FiMail, label: t('register.email'), type: 'email' },
+            { name: 'password', icon: FiLock, label: t('register.password'), type: 'password' },
+            { name: 'confirmPassword', icon: FiLock, label: t('register.confirmPassword'), type: 'password' },
+          ].map((f) => (
+            <div key={f.name}>
+              <label className="block text-sm font-medium text-gray-600 mb-1">{f.label}</label>
               <div className="relative">
-                <field.icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type={field.type}
-                  name={field.name}
-                  value={formData[field.name]}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <f.icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input type={f.type || 'text'} name={f.name} value={form[f.name]} onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" required />
               </div>
             </div>
           ))}
-          <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
+          <button type="submit" disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
             {loading ? t('common.loading') : <><FiUserPlus size={18} /> {t('register.createAccount')}</>}
           </button>
         </form>
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">{t('register.haveAccount')} <Link to="/" className="text-blue-500 font-medium hover:underline">{t('login.signIn')}</Link></p>
+
+        <div className="mt-6 text-center text-sm">
+          <span className="text-gray-500">{t('register.haveAccount')} </span>
+          <Link to="/" className="text-blue-500 font-medium hover:underline">{t('login.signIn')}</Link>
         </div>
       </div>
     </div>

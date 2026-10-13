@@ -1,34 +1,58 @@
-# Python
+# ═══════════════════════════════════════════════
+# PYTHON / BACKEND
+# ═══════════════════════════════════════════════
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 .venv/
 venv/
-__pycache__/
-*.pyc
-*.pyo
+env/
+ENV/
 *.egg-info/
 .pytest_cache/
 
-# Node
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# ═══════════════════════════════════════════════
+# NODE / FRONTEND
+# ═══════════════════════════════════════════════
 node_modules/
-.next/
-out/
 dist/
 build/
+.vite/
+*.local
 
-# ESP-IDF
-build/
-managed_components/
-sdkconfig.old
-dependencies.lock
+# ═══════════════════════════════════════════════
+# ENVIRONMENT VARIABLES (CRITICAL - NEVER PUSH!)
+# ═══════════════════════════════════════════════
+.env
+.env.local
+.env.production
+*.env
 
-# IDE
+# ═══════════════════════════════════════════════
+# IDE / OS
+# ═══════════════════════════════════════════════
 .vscode/
 .idea/
 *.swp
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Env
-.env
-.env.local
+# ═══════════════════════════════════════════════
+# ML MODEL FILES (optional - depends on size)
+# ═══════════════════════════════════════════════
+# Uncomment if model is > 100 MB:
+# ml/medical_imaging/models/*.pth
+# ml/medical_imaging/datasets/
+
+# ═══════════════════════════════════════════════
+# STORAGE UPLOADS
+# ═══════════════════════════════════════════════
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep

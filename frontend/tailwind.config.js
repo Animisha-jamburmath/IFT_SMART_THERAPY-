@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -16,9 +13,9 @@ export default {
         background: '#F7FAFC',
       },
       boxShadow: {
-        'soft': '0 4px 20px rgba(0,0,0,0.05)',
-        'medium': '0 8px 30px rgba(0,0,0,0.08)',
-        'large': '0 20px 60px rgba(0,0,0,0.1)',
+        soft: '0 4px 20px rgba(0,0,0,0.05)',
+        medium: '0 8px 30px rgba(0,0,0,0.08)',
+        large: '0 20px 60px rgba(0,0,0,0.1)',
       },
     },
   },

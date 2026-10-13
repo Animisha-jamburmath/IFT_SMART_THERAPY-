@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import wsService from '../services/websocket/client';
+import mqttService from '../services/mqtt/client';
 import { getSessionRecords, createSessionRecord } from '../services/api/sessionRecords';
 
 export const useSessionRecords = () => {
@@ -9,39 +9,23 @@ export const useSessionRecords = () => {
 
   const fetchRecords = async () => {
     setLoading(true);
-    try {
-      const data = await getSessionRecords();
-      setRecords(data);
-    } catch (error) {
-      console.error('Failed to fetch session records:', error);
-    } finally {
-      setLoading(false);
-    }
+    try { setRecords(await getSessionRecords()); } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
-  const handleSessionRecord = async (message) => {
+  const handleMQTT = async (payload) => {
     try {
-      const data = message.data || message;
-      console.log('📨 Session record received:', data);
+      const data = JSON.parse(payload);
       setLastRecord(data);
-      const saved = await createSessionRecord(data);
-      console.log('✅ Session record saved:', saved);
+      await createSessionRecord(data);
       await fetchRecords();
-    } catch (error) {
-      console.error('Failed to process session record:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   useEffect(() => {
-    if (!wsService.isConnected()) {
-      wsService.connect();
-    }
-    wsService.on('session_record', handleSessionRecord);
+    if (!mqttService.isConnected()) mqttService.connect();
+    mqttService.on('ift/session_record', handleMQTT);
     fetchRecords();
-
-    return () => {
-      wsService.off('session_record', handleSessionRecord);
-    };
   }, []);
 
   return { records, loading, lastRecord, refresh: fetchRecords };

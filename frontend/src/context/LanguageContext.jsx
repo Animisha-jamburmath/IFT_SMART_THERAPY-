@@ -8,11 +8,8 @@ export const LanguageProvider = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language || 'en');
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('i18nextLng');
-    if (savedLang) {
-      setCurrentLanguage(savedLang);
-      i18n.changeLanguage(savedLang);
-    }
+    const saved = localStorage.getItem('i18nextLng');
+    if (saved) { setCurrentLanguage(saved); i18n.changeLanguage(saved); }
   }, [i18n]);
 
   const changeLanguage = (lang) => {
@@ -28,8 +25,4 @@ export const LanguageProvider = ({ children }) => {
   );
 };
 
-export const useLanguage = () => {
-  const context = useContext(LanguageContext);
-  if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
-  return context;
-};
+export const useLanguage = () => useContext(LanguageContext);

@@ -43,7 +43,10 @@ class PatientResponse(BaseModel):
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     payload = decode_token(token)
-    user = db.query(User).filter(User.username == payload.get("sub")).first()
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -61,16 +64,19 @@ def list_patients(skip: int = 0, limit: int = 100, search: str = "",
         s = f"%{search}%"
         query = query.filter((Patient.name.ilike(s)) | (Patient.disease.ilike(s)) | (Patient.contact.ilike(s)))
     patients = query.offset(skip).limit(limit).all()
-    return [PatientResponse(
-        id=p.id, name=p.name, age=p.age or 0, gender=p.gender, disease=p.disease,
-        contact=p.contact, email=p.email or "", created_by=p.created_by,
-        created_at=fmt(p.created_at), updated_at=fmt(p.updated_at),
-    ) for p in patients]
+    return [PatientResponse(id=p.id, name=p.name, age=p.age or 0, gender=p.gender,
+                            disease=p.disease, contact=p.contact, email=p.email or "",
+                            created_by=p.created_by, created_at=fmt(p.created_at),
+                            updated_at=fmt(p.updated_at)) for p in patients]
 
 
 @router.post("/", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
 def create_patient(data: PatientCreate, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
+    existing = db.query(Patient).filter(Patient.contact == data.contact).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Patient with this contact exists")
+
     p = Patient(**data.dict(), created_by=current_user.id)
     db.add(p)
     db.commit()
@@ -94,8 +100,8 @@ def get_patient(patient_id: int, db: Session = Depends(get_db),
 
 
 @router.put("/{patient_id}", response_model=PatientResponse)
-def update_patient(patient_id: int, data: PatientUpdate,
-                   db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_patient(patient_id: int, data: PatientUpdate, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
     p = db.query(Patient).filter(Patient.id == patient_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -117,3 +123,4 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="Patient not found")
     db.delete(p)
     db.commit()
+    return None

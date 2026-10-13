@@ -18,7 +18,8 @@ class ReportCreate(BaseModel):
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     payload = decode_token(token)
-    user = db.query(User).filter(User.username == payload.get("sub")).first()
+    username = payload.get("sub")
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -27,15 +28,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 @router.post("/")
 def create_report(data: ReportCreate, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
-    p = db.query(Patient).filter(Patient.id == data.patient_id).first()
-    if not p:
+    patient = db.query(Patient).filter(Patient.id == data.patient_id).first()
+    if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
-    r = Report(patient_id=data.patient_id, session_id=data.session_id,
-               title=data.title, content=data.content, generated_by=current_user.id)
-    db.add(r)
+    report = Report(patient_id=data.patient_id, session_id=data.session_id,
+                    title=data.title, content=data.content, generated_by=current_user.id)
+    db.add(report)
     db.commit()
-    db.refresh(r)
-    return r
+    db.refresh(report)
+    return report
 
 
 @router.get("/{patient_id}")

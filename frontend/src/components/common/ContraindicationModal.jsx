@@ -2,17 +2,16 @@ import React from 'react';
 import { FiX, FiAlertTriangle } from 'react-icons/fi';
 
 const contraindications = [
-  'Acute myocardial infarction or recent unstable cardiac events within the last 2 to 3 days.',
+  'Acute myocardial infarction (heart attack) or recent unstable cardiac events within the last 2 to 3 days.',
   'Unstable angina or severe, uncontrolled resting heart failure and arrhythmias.',
-  'Active deep vein thrombosis (DVT) or pulmonary embolism.',
+  'Active deep vein thrombosis (DVT) or pulmonary embolism due to the risk of dislodging a blood clot.',
   'Acute systemic infections accompanied by a high fever.',
   'Recent arterial dissection or acute aortic aneurysm.',
-  'Lack of patient consent or inability to cooperate.',
+  'Lack of patient consent or inability to cooperate due to severe altered mental status.',
 ];
 
 const ContraindicationModal = ({ onAgree, onDismiss, open }) => {
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
@@ -24,12 +23,10 @@ const ContraindicationModal = ({ onAgree, onDismiss, open }) => {
           <button onClick={onDismiss} className="text-white/80 hover:text-white"><FiX size={28} /></button>
         </div>
         <div className="p-6 overflow-y-auto max-h-[60vh]">
-          <p className="text-sm text-gray-600 mb-4"><strong>Please read carefully.</strong></p>
           <ul className="space-y-3">
             {contraindications.map((item, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
-                <span className="text-danger font-bold mt-0.5">⚠</span>
-                <span>{item}</span>
+                <span className="text-danger font-bold mt-0.5">⚠</span><span>{item}</span>
               </li>
             ))}
           </ul>

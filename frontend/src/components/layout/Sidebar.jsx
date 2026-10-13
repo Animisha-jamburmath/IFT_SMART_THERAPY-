@@ -1,20 +1,20 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import { FiHome, FiActivity, FiSmile, FiSettings, FiHelpCircle, FiImage, FiUser, FiBarChart2 } from 'react-icons/fi';
 import { FaRobot } from 'react-icons/fa';
 
 const Sidebar = () => {
-  const { user } = useAuth();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const location = useLocation();
   const isAdmin = user?.role === 'admin' || user?.role === 'clinician';
 
   const items = [
     { icon: FiHome, label: t('nav.dashboard'), path: '/dashboard' },
     ...(isAdmin ? [{ icon: FiUser, label: t('nav.patients'), path: '/patients' }] : []),
-    ...(isAdmin ? [{ icon: FiBarChart2, label: t('nav.sessions'), path: '/sessions' }] : []),
+    { icon: FiBarChart2, label: t('nav.sessions'), path: '/sessions' },
     { icon: FiSmile, label: t('nav.painLog'), path: '/pain-log' },
     { icon: FaRobot, label: t('nav.aiCoach'), path: '/ai' },
     { icon: FiImage, label: t('nav.imaging'), path: '/imaging' },
@@ -32,19 +32,13 @@ const Sidebar = () => {
         </div>
       </div>
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {items.map((item) => {
+        {items.map((item, i) => {
           const active = location.pathname === item.path;
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                active ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-secondary'
-              }`}
-            >
+            <Link key={i} to={item.path}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${active ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-secondary'}`}>
               <item.icon size={20} className={active ? 'text-primary' : 'text-gray-400'} />
               <span>{item.label}</span>
-              {active && <span className="ml-auto w-1.5 h-8 rounded-full bg-primary"></span>}
             </Link>
           );
         })}
